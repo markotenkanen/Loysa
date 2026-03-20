@@ -96,23 +96,17 @@
   background: rgba(255,255,255,0.08);
 }
 
-/* --- Viestikentän kehys (toolbar + input yhdessä) --- */
+/* --- Viestikentän kehys ---
+   .input-toolbar + .input-row näyttävät yhdeltä sivupalkkilta.
+   Toolbar: yläreuna + pyöristetyt ylänurkat
+   Input-row: alareuna + pyöristetyt alanuokat
+---*/
 
 .input-toolbar,
 .input-row {
   background: var(--chat-input-bg);
   border-left: 1px solid var(--chat-border);
   border-right: 1px solid var(--chat-border);
-}
-
-.input-toolbar {
-  border-top: 1px solid var(--chat-border);
-  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-}
-
-.input-row {
-  border-bottom: 1px solid var(--chat-border);
-  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
 }
 
 .message-input-area:focus-within .input-toolbar,
@@ -127,7 +121,9 @@
   align-items: center;
   gap: 2px;
   padding: 6px 8px 4px;
+  border-top: 1px solid var(--chat-border);
   border-bottom: 1px solid var(--chat-border);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
 }
 
 .toolbar-btn {
@@ -162,23 +158,13 @@
 
 /* --- Syöttörivi --- */
 
-.input-box {
-  background: var(--chat-input-bg);
-  border: 1px solid var(--chat-border);
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
-  transition: border-color var(--transition);
-}
-
-.input-box:focus-within {
-  border-color: rgba(255,255,255,0.25);
-}
-
 .input-row {
   display: flex;
   align-items: flex-end;
   gap: 4px;
   padding: 6px 8px;
+  border-bottom: 1px solid var(--chat-border);
+  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
 }
 
 .textarea-wrapper {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import ChatArea from '../components/ChatArea';
+import ThreadPanel from '../components/ThreadPanel';
 import UserProfile from '../components/UserProfile';
 import SearchModal from '../components/SearchModal';
 import BrowseChannels from '../components/BrowseChannels';
@@ -208,6 +209,3 @@ export default function WorkspacePage() {
     </div>
   );
 }
-
-// Thread-paneeli (yksinkertainen versio suoraan tässä)
-import ThreadPanel from '../components/ThreadPanel';
