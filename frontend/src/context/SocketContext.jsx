@@ -13,7 +13,7 @@ export function SocketProvider({ children }) {
     const token = localStorage.getItem('loysa_token');
     if (!user || !token) return;
 
-    const socket = io('/', {
+    const socket = io(import.meta.env.VITE_API_URL || '/', {
       auth: { token },
       transports: ['websocket', 'polling']
     });
