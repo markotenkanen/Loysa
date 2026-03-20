@@ -1,0 +1,151 @@
+/* ============================================
+   ChannelHeader – kanavan otsikkoalue
+   ============================================ */
+
+.channel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 49px;
+  border-bottom: 1px solid var(--chat-border);
+  flex-shrink: 0;
+  background: var(--chat-bg);
+  gap: 12px;
+}
+
+.channel-header-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.channel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* --- DM-otsikko --- */
+
+.dm-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dm-header h2 {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text-white);
+}
+
+.header-status {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* --- Kanavan nimi + aihe --- */
+
+.channel-name-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.channel-name-section h2 {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text-white);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.channel-name-section h2 .hash {
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-right: 1px;
+}
+
+.topic-btn {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--border-radius);
+  transition: background var(--transition), color var(--transition);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 360px;
+  text-align: left;
+}
+
+.topic-btn:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text-secondary);
+}
+
+.topic-placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.7;
+}
+
+.topic-edit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.topic-edit input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  background: var(--chat-input-bg);
+  border: 1px solid var(--text-link);
+  border-radius: var(--border-radius);
+  color: var(--text-white);
+  font-size: 13px;
+  outline: none;
+}
+
+/* --- Painikkeet oikealla --- */
+
+.header-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border-radius: var(--border-radius);
+  font-size: 16px;
+  transition: background var(--transition), color var(--transition);
+}
+
+.header-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.header-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-white);
+}
+
+.header-btn.active {
+  background: rgba(255,255,255,0.12);
+  color: var(--text-white);
+}

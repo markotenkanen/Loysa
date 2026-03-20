@@ -1,0 +1,609 @@
+/* ============================================
+   LOYSA – Globaalit tyylit
+   Slack-henkinen tumma teema
+   ============================================ */
+
+/* CSS-muuttujat */
+:root {
+  /* Sidebar värit */
+  --sidebar-bg: #3f0e40;
+  --sidebar-hover: #350d36;
+  --sidebar-active: #1164a3;
+  --sidebar-active-text: #ffffff;
+  --sidebar-text: #cfc3cf;
+  --sidebar-text-muted: #9d809c;
+  --sidebar-header-bg: #350d36;
+  --sidebar-border: rgba(255,255,255,0.1);
+
+  /* Chat värit */
+  --chat-bg: #1a1d21;
+  --chat-input-bg: #222529;
+  --chat-border: #383838;
+  --chat-hover: #22272b;
+
+  /* Teksti */
+  --text-primary: #d1d2d3;
+  --text-secondary: #9e9ea6;
+  --text-muted: #616061;
+  --text-link: #1d9bd1;
+  --text-mention: #1d9bd1;
+  --text-white: #ffffff;
+
+  /* Status */
+  --status-online: #2bac76;
+  --status-away: #ecb22e;
+  --status-offline: #616061;
+
+  /* Painikkeet */
+  --btn-primary: #007a5a;
+  --btn-primary-hover: #148567;
+  --btn-secondary-bg: transparent;
+  --btn-secondary-border: #565856;
+  --btn-danger: #e01e5a;
+
+  /* Modaalit */
+  --modal-bg: #1a1d21;
+  --modal-border: #383838;
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+
+  /* Muut */
+  --border-radius: 4px;
+  --border-radius-lg: 8px;
+  --font: 'Slack-Lato', 'appleLogo', sans-serif;
+  --font-mono: 'Slack-Mono', 'Monaco', 'Courier New', monospace;
+  --transition: 80ms ease;
+}
+
+/* ============================================
+   Reset & Base
+   ============================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+  font-size: 15px;
+  line-height: 1.46668;
+  color: var(--text-primary);
+  background: var(--chat-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+svg {
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Ladataan-näyttö (loading screen)
+   ============================================ */
+
+.loading-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: var(--chat-bg);
+}
+
+/* Spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255,255,255,0.15);
+  border-top-color: var(--text-link);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: var(--text-link);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Workspace-layout (WorkspacePage)
+   ============================================ */
+
+.workspace {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.no-channel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.right-panel {
+  width: 360px;
+  min-width: 280px;
+  max-width: 420px;
+  border-left: 1px solid var(--chat-border);
+  background: var(--chat-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Auth-sivut (Login, Register, CreateWorkspace)
+   ============================================ */
+
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #1a1d21;
+  padding: 24px;
+}
+
+.auth-card {
+  background: #222529;
+  border-radius: 12px;
+  border: 1px solid var(--chat-border);
+  padding: 40px 40px 32px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+}
+
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--sidebar-bg);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.auth-logo h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-white);
+  letter-spacing: -0.5px;
+}
+
+.auth-card h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin-bottom: 24px;
+}
+
+.error-message {
+  background: rgba(224, 30, 90, 0.15);
+  border: 1px solid rgba(224, 30, 90, 0.4);
+  color: #e01e5a;
+  border-radius: var(--border-radius);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+/* Lomakekentät */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--chat-bg);
+  border: 1px solid #565856;
+  border-radius: var(--border-radius);
+  color: var(--text-white);
+  font-size: 15px;
+  transition: border-color var(--transition);
+  outline: none;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--text-link);
+  box-shadow: 0 0 0 3px rgba(29, 155, 209, 0.2);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.form-group small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Input etuliitteellä */
+.input-prefix {
+  display: flex;
+  align-items: center;
+  border: 1px solid #565856;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: var(--chat-bg);
+}
+
+.input-prefix span {
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text-muted);
+  font-size: 14px;
+  border-right: 1px solid #565856;
+  white-space: nowrap;
+}
+
+.input-prefix input {
+  flex: 1;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 10px 12px !important;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Painikkeet */
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 11px 16px;
+  background: var(--btn-primary);
+  color: #fff;
+  border-radius: var(--border-radius);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  transition: background var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--btn-primary-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--btn-secondary-border);
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 400;
+  transition: background var(--transition);
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 13px;
+  border-radius: var(--border-radius);
+  background: var(--btn-primary);
+  color: #fff;
+  border: none;
+}
+
+.btn-small:hover {
+  background: var(--btn-primary-hover);
+}
+
+.btn-small.secondary {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid #565856;
+}
+
+.auth-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--chat-border);
+}
+
+.auth-links a {
+  font-size: 14px;
+  color: var(--text-link);
+  text-align: center;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
+/* ============================================
+   Modaali-pohja (käytössä kaikkialla)
+   ============================================ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--border-radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+}
+
+.modal h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin-bottom: 20px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--chat-border);
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.close-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border-radius: var(--border-radius);
+  font-size: 20px;
+  line-height: 1;
+  transition: background var(--transition);
+}
+
+.close-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-white);
+}
+
+/* ============================================
+   Statuspisteet
+   ============================================ */
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: var(--status-online);
+}
+
+.status-dot.away {
+  background: var(--status-away);
+}
+
+.status-dot.offline {
+  background: var(--status-offline);
+  border: 1.5px solid var(--status-offline);
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--sidebar-bg);
+}
+
+.status-indicator.online { background: var(--status-online); }
+.status-indicator.away   { background: var(--status-away); }
+.status-indicator.offline { background: var(--status-offline); }
+
+/* Avatar placeholder */
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #611f69, #1164a3);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: var(--border-radius);
+  user-select: none;
+}
+
+/* ============================================
+   Feedback-viesti (success/error)
+   ============================================ */
+
+.feedback-msg {
+  padding: 10px 14px;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  margin: 0 24px 12px;
+}
+
+.feedback-msg.success {
+  background: rgba(43, 172, 118, 0.15);
+  border: 1px solid rgba(43, 172, 118, 0.4);
+  color: #2bac76;
+}
+
+.feedback-msg.error {
+  background: rgba(224, 30, 90, 0.15);
+  border: 1px solid rgba(224, 30, 90, 0.4);
+  color: #e01e5a;
+}
+
+/* ============================================
+   Tyhjät tilat
+   ============================================ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.empty-state .empty-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.empty-state h3 {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.empty-state p {
+  font-size: 14px;
+  max-width: 280px;
+}
+
+/* Paneelin tyhjä tila */
+.empty-panel {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-panel p {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.empty-panel small {
+  font-size: 12px;
+  color: var(--text-muted);
+}

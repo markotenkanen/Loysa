@@ -1,0 +1,94 @@
+/* ============================================
+   SavedMessages – tallennetut viestit
+   ============================================ */
+
+.saved-modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--border-radius-lg);
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+}
+
+/* --- Lista --- */
+
+.saved-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.saved-list::-webkit-scrollbar {
+  width: 4px;
+}
+.saved-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
+
+/* --- Yksittäinen tallennus --- */
+
+.saved-item {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background var(--transition);
+}
+
+.saved-item:hover {
+  background: var(--chat-hover);
+}
+
+.saved-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.saved-channel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-link);
+}
+
+.saved-author {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.saved-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.saved-content {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  margin-bottom: 8px;
+}
+
+.unsave-btn {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 3px 8px;
+  border: 1px solid var(--chat-border);
+  border-radius: var(--border-radius);
+  transition: background var(--transition), color var(--transition);
+}
+
+.unsave-btn:hover {
+  background: rgba(224, 30, 90, 0.1);
+  border-color: rgba(224, 30, 90, 0.3);
+  color: var(--btn-danger);
+}

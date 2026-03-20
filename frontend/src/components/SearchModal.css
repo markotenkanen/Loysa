@@ -1,0 +1,168 @@
+/* ============================================
+   SearchModal – hakumodalisi
+   ============================================ */
+
+.search-modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--border-radius-lg);
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+}
+
+/* --- Hakukenttä --- */
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--chat-border);
+  flex-shrink: 0;
+}
+
+.search-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.search-input-wrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-white);
+  font-size: 16px;
+}
+
+.search-input-wrapper input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-close {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--chat-border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.search-close:hover {
+  background: rgba(255,255,255,0.14);
+  color: var(--text-primary);
+}
+
+/* --- Hakutulokset --- */
+
+.search-results {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.search-results::-webkit-scrollbar {
+  width: 4px;
+}
+.search-results::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
+
+.results-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 10px 16px 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.search-result-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background var(--transition);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.search-result-item:hover {
+  background: var(--chat-hover);
+}
+
+.result-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.result-channel {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-link);
+}
+
+.result-author {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.result-time {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.result-content {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+/* --- Ei tuloksia --- */
+
+.no-results {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* --- Hakuvinkit --- */
+
+.search-hints {
+  padding: 16px;
+}
+
+.hint-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+.hint kbd {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--chat-border);
+  border-radius: 3px;
+  padding: 1px 5px;
+}

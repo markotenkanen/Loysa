@@ -1,0 +1,133 @@
+/* ============================================
+   MembersPanel – jäsenlistapaneeli
+   ============================================ */
+
+.members-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: var(--chat-bg);
+}
+
+/* --- Otsikko --- */
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--chat-border);
+  flex-shrink: 0;
+}
+
+.panel-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+/* --- Jäsenlistaus --- */
+
+.members-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.members-list::-webkit-scrollbar {
+  width: 4px;
+}
+.members-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
+
+.member-group {
+  margin-bottom: 8px;
+}
+
+.group-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 6px 16px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* --- Yksittäinen jäsen --- */
+
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: background var(--transition);
+  border-radius: 0;
+}
+
+.member-item:hover {
+  background: var(--chat-hover);
+}
+
+.member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  position: relative;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.member-avatar img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.member-avatar .avatar-placeholder {
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.member-avatar .status-indicator {
+  border: 2px solid var(--chat-bg);
+}
+
+.member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.member-status {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.admin-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--status-away);
+  background: rgba(236, 178, 46, 0.15);
+  border: 1px solid rgba(236, 178, 46, 0.3);
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}

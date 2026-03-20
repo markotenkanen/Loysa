@@ -1,0 +1,133 @@
+/* ============================================
+   BrowseChannels – selaa kanavia
+   ============================================ */
+
+.browse-modal {
+  background: var(--modal-bg);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--border-radius-lg);
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.5);
+}
+
+/* --- Hakukenttä --- */
+
+.search-bar {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--chat-border);
+  flex-shrink: 0;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--chat-input-bg);
+  border: 1px solid var(--chat-border);
+  border-radius: var(--border-radius);
+  color: var(--text-white);
+  font-size: 14px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.search-bar input:focus {
+  border-color: var(--text-link);
+}
+
+.search-bar input::placeholder {
+  color: var(--text-muted);
+}
+
+/* --- Kanavaluettelo --- */
+
+.channel-browse-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+
+.channel-browse-list::-webkit-scrollbar {
+  width: 4px;
+}
+.channel-browse-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
+
+.browse-channel-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background var(--transition);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.browse-channel-item:hover {
+  background: var(--chat-hover);
+}
+
+.browse-channel-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.browse-channel-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.browse-channel-name .hash {
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.browse-channel-name strong {
+  font-size: 14px;
+  color: var(--text-white);
+}
+
+.member-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.browse-channel-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--status-online);
+  background: rgba(43, 172, 118, 0.12);
+  border: 1px solid rgba(43, 172, 118, 0.3);
+  border-radius: 3px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.browse-modal .btn-primary {
+  width: auto;
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.browse-modal .btn-small {
+  padding: 5px 12px;
+  font-size: 13px;
+}
