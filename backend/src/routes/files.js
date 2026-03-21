@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const db = require('../db/database');
+const { pool } = require('../db/database');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -32,23 +32,23 @@ const upload = multer({
   }
 });
 
-router.post('/upload', authenticateToken, upload.single('file'), (req, res) => {
+router.post('/upload', authenticateToken, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Tiedosto puuttuu' });
 
   try {
     const { channel_id, message_id } = req.body;
-    const file = db.prepare(`
+    const result = await pool.query(`
       INSERT INTO files (workspace_id, user_id, channel_id, message_id, filename, original_name, mime_type, size)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
+    `, [
       req.user.workspace_id, req.user.id,
       channel_id || null, message_id || null,
       req.file.filename, req.file.originalname,
       req.file.mimetype, req.file.size
-    );
+    ]);
 
     res.json({
-      id: file.lastInsertRowid,
+      id: result.rows[0].id,
       filename: req.file.filename,
       original_name: req.file.originalname,
       mime_type: req.file.mimetype,

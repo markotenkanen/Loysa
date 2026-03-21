@@ -4,7 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
-const db = require('./db/database');
+const { pool, initializeDatabase } = require('./db/database');
 const jwt = require('jsonwebtoken');
 
 const app = express();
@@ -34,23 +34,23 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/files', require('./routes/files'));
 
 // Slash-komennot
-app.post('/api/commands', require('./middleware/auth').authenticateToken, (req, res) => {
+app.post('/api/commands', require('./middleware/auth').authenticateToken, async (req, res) => {
   const { command, text, channel_id } = req.body;
   switch (command) {
     case '/me':
       res.json({ type: 'me_action', text: text || '' });
       break;
     case '/away':
-      db.prepare('UPDATE users SET is_away = 1 WHERE id = ?').run(req.user.id);
+      await pool.query('UPDATE users SET is_away = 1 WHERE id = $1', [req.user.id]);
       res.json({ type: 'status', text: 'Olet nyt poissa' });
       break;
     case '/active':
-      db.prepare('UPDATE users SET is_away = 0 WHERE id = ?').run(req.user.id);
+      await pool.query('UPDATE users SET is_away = 0 WHERE id = $1', [req.user.id]);
       res.json({ type: 'status', text: 'Olet nyt aktiivinen' });
       break;
     case '/topic':
       if (channel_id && text) {
-        db.prepare('UPDATE channels SET topic = ? WHERE id = ?').run(text, channel_id);
+        await pool.query('UPDATE channels SET topic = $1 WHERE id = $2', [text, channel_id]);
         res.json({ type: 'topic', text });
       } else {
         res.json({ type: 'error', text: 'Käyttö: /topic <aihe>' });
@@ -89,7 +89,7 @@ io.use((socket, next) => {
   }
 });
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   const userId = socket.user.id;
   const workspaceId = socket.user.workspace_id;
 
@@ -99,15 +99,15 @@ io.on('connection', (socket) => {
   socketUsers.set(socket.id, userId);
 
   // Merkitse online
-  db.prepare('UPDATE users SET is_online = 1 WHERE id = ?').run(userId);
+  await pool.query('UPDATE users SET is_online = 1 WHERE id = $1', [userId]);
   socket.to(`workspace:${workspaceId}`).emit('user:online', { userId });
 
   // Liity workspace-huoneeseen
   socket.join(`workspace:${workspaceId}`);
 
   // Liity kanaviin
-  const channels = db.prepare('SELECT channel_id FROM channel_members WHERE user_id = ?').all(userId);
-  for (const { channel_id } of channels) {
+  const channelsResult = await pool.query('SELECT channel_id FROM channel_members WHERE user_id = $1', [userId]);
+  for (const { channel_id } of channelsResult.rows) {
     socket.join(`channel:${channel_id}`);
   }
 
@@ -122,8 +122,8 @@ io.on('connection', (socket) => {
     }
 
     try {
-      const isMember = db.prepare('SELECT 1 FROM channel_members WHERE channel_id = ? AND user_id = ?').get(channel_id, userId);
-      if (!isMember) return callback?.({ error: 'Et ole kanavan jäsen' });
+      const memberResult = await pool.query('SELECT 1 FROM channel_members WHERE channel_id = $1 AND user_id = $2', [channel_id, userId]);
+      if (!memberResult.rows[0]) return callback?.({ error: 'Et ole kanavan jäsen' });
 
       let processedContent = content.trim();
 
@@ -132,17 +132,20 @@ io.on('connection', (socket) => {
         processedContent = `_${processedContent.slice(4)}_`;
       }
 
-      const result = db.prepare(
-        `INSERT INTO messages (channel_id, user_id, content, parent_id) VALUES (?, ?, ?, ?)`
-      ).run(channel_id, userId, processedContent, parent_id || null);
+      const insertResult = await pool.query(
+        `INSERT INTO messages (channel_id, user_id, content, parent_id) VALUES ($1, $2, $3, $4) RETURNING id`,
+        [channel_id, userId, processedContent, parent_id || null]
+      );
+      const messageId = insertResult.rows[0].id;
 
-      const message = db.prepare(`
+      const msgResult = await pool.query(`
         SELECT m.*, u.display_name as author_name, u.avatar as author_avatar,
           u.status_emoji as author_status_emoji
         FROM messages m JOIN users u ON m.user_id = u.id
-        WHERE m.id = ?
-      `).get(result.lastInsertRowid);
+        WHERE m.id = $1
+      `, [messageId]);
 
+      const message = msgResult.rows[0];
       message.reactions = [];
       message.files = [];
       message.reply_count = 0;
@@ -163,19 +166,20 @@ io.on('connection', (socket) => {
       }
 
       for (const mentionName of mentions) {
-        const mentionedUser = db.prepare('SELECT id FROM users WHERE workspace_id = ? AND (display_name LIKE ? OR username LIKE ?)').get(workspaceId, mentionName, mentionName);
+        const mentionResult = await pool.query('SELECT id FROM users WHERE workspace_id = $1 AND (display_name ILIKE $2 OR username ILIKE $2)', [workspaceId, mentionName]);
+        const mentionedUser = mentionResult.rows[0];
         if (mentionedUser && mentionedUser.id !== userId) {
-          db.prepare('INSERT INTO notifications (user_id, type, message_id, channel_id, from_user_id) VALUES (?, ?, ?, ?, ?)').run(mentionedUser.id, 'mention', result.lastInsertRowid, channel_id, userId);
+          await pool.query('INSERT INTO notifications (user_id, type, message_id, channel_id, from_user_id) VALUES ($1, $2, $3, $4, $5)', [mentionedUser.id, 'mention', messageId, channel_id, userId]);
 
           const sockets = userSockets.get(mentionedUser.id);
           if (sockets) {
-            const sender = db.prepare('SELECT display_name FROM users WHERE id = ?').get(userId);
+            const senderResult = await pool.query('SELECT display_name FROM users WHERE id = $1', [userId]);
             sockets.forEach(sid => {
               io.to(sid).emit('notification:new', {
                 type: 'mention',
-                from: sender?.display_name,
+                from: senderResult.rows[0]?.display_name,
                 channel_id,
-                message_id: result.lastInsertRowid,
+                message_id: messageId,
                 content: processedContent.substring(0, 100)
               });
             });
@@ -191,11 +195,11 @@ io.on('connection', (socket) => {
   });
 
   // Kirjoitusilmoitus
-  socket.on('typing:start', (data) => {
-    const user = db.prepare('SELECT display_name FROM users WHERE id = ?').get(userId);
+  socket.on('typing:start', async (data) => {
+    const userResult = await pool.query('SELECT display_name FROM users WHERE id = $1', [userId]);
     socket.to(`channel:${data.channel_id}`).emit('typing:start', {
       userId,
-      displayName: user?.display_name,
+      displayName: userResult.rows[0]?.display_name,
       channel_id: data.channel_id
     });
   });
@@ -208,31 +212,32 @@ io.on('connection', (socket) => {
   });
 
   // Reaktio
-  socket.on('reaction:toggle', (data, callback) => {
+  socket.on('reaction:toggle', async (data, callback) => {
     const { message_id, emoji } = data;
     try {
-      const message = db.prepare('SELECT channel_id FROM messages WHERE id = ?').get(message_id);
+      const msgResult = await pool.query('SELECT channel_id FROM messages WHERE id = $1', [message_id]);
+      const message = msgResult.rows[0];
       if (!message) return callback?.({ error: 'Viestiä ei löydy' });
 
-      const existing = db.prepare('SELECT 1 FROM reactions WHERE message_id = ? AND user_id = ? AND emoji = ?').get(message_id, userId, emoji);
+      const existingResult = await pool.query('SELECT 1 FROM reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3', [message_id, userId, emoji]);
       let action;
-      if (existing) {
-        db.prepare('DELETE FROM reactions WHERE message_id = ? AND user_id = ? AND emoji = ?').run(message_id, userId, emoji);
+      if (existingResult.rows[0]) {
+        await pool.query('DELETE FROM reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3', [message_id, userId, emoji]);
         action = 'removed';
       } else {
-        db.prepare('INSERT INTO reactions (message_id, user_id, emoji) VALUES (?, ?, ?)').run(message_id, userId, emoji);
+        await pool.query('INSERT INTO reactions (message_id, user_id, emoji) VALUES ($1, $2, $3)', [message_id, userId, emoji]);
         action = 'added';
       }
 
-      const reactions = db.prepare(`
+      const reactionsResult = await pool.query(`
         SELECT emoji, COUNT(*) as count,
-          MAX(CASE WHEN r.user_id = ? THEN 1 ELSE 0 END) as reacted_by_me
-        FROM reactions r WHERE r.message_id = ?
+          MAX(CASE WHEN r.user_id = $1 THEN 1 ELSE 0 END) as reacted_by_me
+        FROM reactions r WHERE r.message_id = $2
         GROUP BY emoji
-      `).all(userId, message_id);
+      `, [userId, message_id]);
 
       io.to(`channel:${message.channel_id}`).emit('reaction:updated', {
-        message_id, reactions, action, emoji, userId, channel_id: message.channel_id
+        message_id, reactions: reactionsResult.rows, action, emoji, userId, channel_id: message.channel_id
       });
 
       callback?.({ ok: true });
@@ -242,15 +247,16 @@ io.on('connection', (socket) => {
   });
 
   // Muokkaa viesti
-  socket.on('message:edit', (data, callback) => {
+  socket.on('message:edit', async (data, callback) => {
     const { message_id, content } = data;
     if (!content?.trim()) return callback?.({ error: 'Sisältö vaaditaan' });
 
     try {
-      const message = db.prepare('SELECT * FROM messages WHERE id = ? AND user_id = ?').get(message_id, userId);
+      const msgResult = await pool.query('SELECT * FROM messages WHERE id = $1 AND user_id = $2', [message_id, userId]);
+      const message = msgResult.rows[0];
       if (!message) return callback?.({ error: 'Viestiä ei löydy' });
 
-      db.prepare('UPDATE messages SET content = ?, is_edited = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(content.trim(), message_id);
+      await pool.query('UPDATE messages SET content = $1, is_edited = 1, updated_at = NOW() WHERE id = $2', [content.trim(), message_id]);
 
       io.to(`channel:${message.channel_id}`).emit('message:edited', {
         message_id,
@@ -266,18 +272,19 @@ io.on('connection', (socket) => {
   });
 
   // Poista viesti
-  socket.on('message:delete', (data, callback) => {
+  socket.on('message:delete', async (data, callback) => {
     const { message_id } = data;
     try {
-      const message = db.prepare('SELECT * FROM messages WHERE id = ?').get(message_id);
+      const msgResult = await pool.query('SELECT * FROM messages WHERE id = $1', [message_id]);
+      const message = msgResult.rows[0];
       if (!message) return callback?.({ error: 'Viestiä ei löydy' });
 
-      const userRole = db.prepare('SELECT role FROM users WHERE id = ?').get(userId);
-      if (message.user_id !== userId && userRole?.role !== 'admin') {
+      const roleResult = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+      if (message.user_id !== userId && roleResult.rows[0]?.role !== 'admin') {
         return callback?.({ error: 'Ei oikeuksia' });
       }
 
-      db.prepare('UPDATE messages SET is_deleted = 1, content = \'[Viesti poistettu]\' WHERE id = ?').run(message_id);
+      await pool.query("UPDATE messages SET is_deleted = 1, content = '[Viesti poistettu]' WHERE id = $1", [message_id]);
 
       io.to(`channel:${message.channel_id}`).emit('message:deleted', {
         message_id,
@@ -296,13 +303,13 @@ io.on('connection', (socket) => {
   });
 
   // Käyttäjä poistu
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     const sockets = userSockets.get(userId);
     if (sockets) {
       sockets.delete(socket.id);
       if (sockets.size === 0) {
         userSockets.delete(userId);
-        db.prepare('UPDATE users SET is_online = 0 WHERE id = ?').run(userId);
+        await pool.query('UPDATE users SET is_online = 0 WHERE id = $1', [userId]);
         io.to(`workspace:${workspaceId}`).emit('user:offline', { userId });
       }
     }
@@ -310,8 +317,14 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Loysa-palvelin käynnissä portissa ${PORT}`);
+// Alusta tietokanta ja käynnistä palvelin
+initializeDatabase().then(() => {
+  server.listen(PORT, () => {
+    console.log(`Loysa-palvelin käynnissä portissa ${PORT}`);
+  });
+}).catch(err => {
+  console.error('Tietokannan alustus epäonnistui:', err);
+  process.exit(1);
 });
 
 module.exports = { app, io };

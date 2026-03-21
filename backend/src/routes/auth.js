@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const db = require('../db/database');
+const { pool } = require('../db/database');
 const { generateToken, authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -18,57 +18,67 @@ router.post('/workspace/create', async (req, res) => {
     return res.status(400).json({ error: 'Slug voi sisältää vain pieniä kirjaimia, numeroita ja viivoja' });
   }
 
+  const client = await pool.connect();
   try {
-    const existing = db.prepare('SELECT id FROM workspaces WHERE slug = ?').get(workspaceSlug);
-    if (existing) {
+    const existing = await client.query('SELECT id FROM workspaces WHERE slug = $1', [workspaceSlug]);
+    if (existing.rows[0]) {
       return res.status(409).json({ error: 'Workspace-tunnus on jo käytössä' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
 
-    const createWorkspace = db.transaction(() => {
-      const workspace = db.prepare(
-        'INSERT INTO workspaces (name, slug) VALUES (?, ?)'
-      ).run(workspaceName, workspaceSlug);
+    await client.query('BEGIN');
 
-      const user = db.prepare(
-        `INSERT INTO users (workspace_id, username, email, password_hash, display_name, role)
-         VALUES (?, ?, ?, ?, ?, 'admin')`
-      ).run(workspace.lastInsertRowid, email.split('@')[0], email, passwordHash, displayName);
+    const workspace = await client.query(
+      'INSERT INTO workspaces (name, slug) VALUES ($1, $2) RETURNING id',
+      [workspaceName, workspaceSlug]
+    );
+    const workspaceId = workspace.rows[0].id;
 
-      // Luo general-kanava
-      const generalChannel = db.prepare(
-        `INSERT INTO channels (workspace_id, name, description, created_by)
-         VALUES (?, 'general', 'Yleinen kanava kaikille', ?)`
-      ).run(workspace.lastInsertRowid, user.lastInsertRowid);
+    const user = await client.query(
+      `INSERT INTO users (workspace_id, username, email, password_hash, display_name, role)
+       VALUES ($1, $2, $3, $4, $5, 'admin') RETURNING id`,
+      [workspaceId, email.split('@')[0], email, passwordHash, displayName]
+    );
+    const userId = user.rows[0].id;
 
-      db.prepare(
-        'INSERT INTO channel_members (channel_id, user_id, is_admin) VALUES (?, ?, 1)'
-      ).run(generalChannel.lastInsertRowid, user.lastInsertRowid);
+    const generalChannel = await client.query(
+      `INSERT INTO channels (workspace_id, name, description, created_by)
+       VALUES ($1, 'general', 'Yleinen kanava kaikille', $2) RETURNING id`,
+      [workspaceId, userId]
+    );
 
-      // Luo random-kanava
-      const randomChannel = db.prepare(
-        `INSERT INTO channels (workspace_id, name, description, created_by)
-         VALUES (?, 'random', 'Satunnainen keskustelu', ?)`
-      ).run(workspace.lastInsertRowid, user.lastInsertRowid);
+    await client.query(
+      'INSERT INTO channel_members (channel_id, user_id, is_admin) VALUES ($1, $2, 1)',
+      [generalChannel.rows[0].id, userId]
+    );
 
-      db.prepare(
-        'INSERT INTO channel_members (channel_id, user_id, is_admin) VALUES (?, ?, 1)'
-      ).run(randomChannel.lastInsertRowid, user.lastInsertRowid);
+    const randomChannel = await client.query(
+      `INSERT INTO channels (workspace_id, name, description, created_by)
+       VALUES ($1, 'random', 'Satunnainen keskustelu', $2) RETURNING id`,
+      [workspaceId, userId]
+    );
 
-      return {
-        workspace: { id: workspace.lastInsertRowid, name: workspaceName, slug: workspaceSlug },
-        user: { id: user.lastInsertRowid, email, display_name: displayName, role: 'admin', workspace_id: workspace.lastInsertRowid }
-      };
-    });
+    await client.query(
+      'INSERT INTO channel_members (channel_id, user_id, is_admin) VALUES ($1, $2, 1)',
+      [randomChannel.rows[0].id, userId]
+    );
 
-    const result = createWorkspace();
+    await client.query('COMMIT');
+
+    const result = {
+      workspace: { id: workspaceId, name: workspaceName, slug: workspaceSlug },
+      user: { id: userId, email, display_name: displayName, role: 'admin', workspace_id: workspaceId }
+    };
+
     const token = generateToken(result.user);
-
     res.status(201).json({ token, user: result.user, workspace: result.workspace });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err);
     res.status(500).json({ error: 'Palvelinvirhe' });
+  } finally {
+    client.release();
   }
 });
 
@@ -81,12 +91,14 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const workspace = db.prepare('SELECT * FROM workspaces WHERE slug = ?').get(workspaceSlug);
+    const wsResult = await pool.query('SELECT * FROM workspaces WHERE slug = $1', [workspaceSlug]);
+    const workspace = wsResult.rows[0];
     if (!workspace) {
       return res.status(404).json({ error: 'Workspacea ei löydy' });
     }
 
-    const user = db.prepare('SELECT * FROM users WHERE workspace_id = ? AND email = ?').get(workspace.id, email);
+    const userResult = await pool.query('SELECT * FROM users WHERE workspace_id = $1 AND email = $2', [workspace.id, email]);
+    const user = userResult.rows[0];
     if (!user) {
       return res.status(401).json({ error: 'Virheellinen sähköposti tai salasana' });
     }
@@ -96,7 +108,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Virheellinen sähköposti tai salasana' });
     }
 
-    db.prepare('UPDATE users SET is_online = 1 WHERE id = ?').run(user.id);
+    await pool.query('UPDATE users SET is_online = 1 WHERE id = $1', [user.id]);
 
     const token = generateToken(user);
     const { password_hash, ...safeUser } = user;
@@ -117,29 +129,33 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const workspace = db.prepare('SELECT * FROM workspaces WHERE slug = ?').get(workspaceSlug);
+    const wsResult = await pool.query('SELECT * FROM workspaces WHERE slug = $1', [workspaceSlug]);
+    const workspace = wsResult.rows[0];
     if (!workspace) {
       return res.status(404).json({ error: 'Workspacea ei löydy' });
     }
 
-    const existing = db.prepare('SELECT id FROM users WHERE workspace_id = ? AND email = ?').get(workspace.id, email);
-    if (existing) {
+    const existingResult = await pool.query('SELECT id FROM users WHERE workspace_id = $1 AND email = $2', [workspace.id, email]);
+    if (existingResult.rows[0]) {
       return res.status(409).json({ error: 'Sähköposti on jo käytössä' });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = db.prepare(
+    const userResult = await pool.query(
       `INSERT INTO users (workspace_id, username, email, password_hash, display_name)
-       VALUES (?, ?, ?, ?, ?)`
-    ).run(workspace.id, email.split('@')[0], email, passwordHash, displayName);
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [workspace.id, email.split('@')[0], email, passwordHash, displayName]
+    );
+    const userId = userResult.rows[0].id;
 
     // Liitä general-kanavalle
-    const generalChannel = db.prepare('SELECT id FROM channels WHERE workspace_id = ? AND name = ?').get(workspace.id, 'general');
-    if (generalChannel) {
-      db.prepare('INSERT OR IGNORE INTO channel_members (channel_id, user_id) VALUES (?, ?)').run(generalChannel.id, user.lastInsertRowid);
+    const generalResult = await pool.query('SELECT id FROM channels WHERE workspace_id = $1 AND name = $2', [workspace.id, 'general']);
+    if (generalResult.rows[0]) {
+      await pool.query('INSERT INTO channel_members (channel_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [generalResult.rows[0].id, userId]);
     }
 
-    const newUser = db.prepare('SELECT id, workspace_id, email, display_name, role FROM users WHERE id = ?').get(user.lastInsertRowid);
+    const newUserResult = await pool.query('SELECT id, workspace_id, email, display_name, role FROM users WHERE id = $1', [userId]);
+    const newUser = newUserResult.rows[0];
     const token = generateToken(newUser);
 
     res.status(201).json({ token, user: newUser, workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug } });
@@ -150,20 +166,21 @@ router.post('/register', async (req, res) => {
 });
 
 // Hae nykyinen käyttäjä
-router.get('/me', authenticateToken, (req, res) => {
+router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const user = db.prepare('SELECT id, workspace_id, email, display_name, avatar, status_emoji, status_text, role, is_online, is_away FROM users WHERE id = ?').get(req.user.id);
+    const userResult = await pool.query('SELECT id, workspace_id, email, display_name, avatar, status_emoji, status_text, role, is_online, is_away FROM users WHERE id = $1', [req.user.id]);
+    const user = userResult.rows[0];
     if (!user) return res.status(404).json({ error: 'Käyttäjää ei löydy' });
-    const workspace = db.prepare('SELECT id, name, slug FROM workspaces WHERE id = ?').get(user.workspace_id);
-    res.json({ user, workspace });
+    const wsResult = await pool.query('SELECT id, name, slug FROM workspaces WHERE id = $1', [user.workspace_id]);
+    res.json({ user, workspace: wsResult.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Palvelinvirhe' });
   }
 });
 
 // Kirjaudu ulos
-router.post('/logout', authenticateToken, (req, res) => {
-  db.prepare('UPDATE users SET is_online = 0 WHERE id = ?').run(req.user.id);
+router.post('/logout', authenticateToken, async (req, res) => {
+  await pool.query('UPDATE users SET is_online = 0 WHERE id = $1', [req.user.id]);
   res.json({ message: 'Kirjauduttu ulos' });
 });
 
